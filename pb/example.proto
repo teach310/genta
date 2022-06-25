@@ -1,0 +1,8 @@
+syntax = "proto3";
+package example.protobuf;
+option go_package = "./example";
+
+message SimpleMessage {
+    uint64 id = 1;
+    string name = 2;
+}
