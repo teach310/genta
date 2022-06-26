@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"log"
+
+	"github.com/teach310/genta"
 )
 
 func main() {
-	fmt.Printf("Hello World\n")
-	// if err := run(); err != nil {
-	// 	log.Fatalln(err)
-	// }
+	if err := genta.Run(); err != nil {
+		log.Fatalln(err)
+	}
 }
