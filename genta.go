@@ -1,10 +1,10 @@
 package genta
 
 import (
-	"github.com/teach310/genta/generator"
+	"github.com/teach310/genta/protogen"
 )
 
 func Run() error {
-	gen := &generator.Generator{}
-	return gen.Run()
+	protogen.NewPlugin().Run()
+	return nil
 }
