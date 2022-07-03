@@ -1,6 +1,5 @@
 syntax = "proto3";
-package example.protobuf;
-option go_package = "./example";
+package example;
 
 message SimpleMessage {
     uint64 id = 1;
