@@ -72,6 +72,9 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 	for _, filename := range req.FileToGenerate {
 		var sb strings.Builder
 		protoFile := protoFiles[filename]
+		sb.WriteString("FileDescriptorProto.GetPackage(): ")
+		sb.WriteString(protoFile.Proto.GetPackage())
+		sb.WriteString("\n")
 		sb.WriteString(plugin.getMessageInfoPrototype(protoFile.Proto.GetMessageType()))
 		sb.WriteString("\n\nEND!\n")
 		outputPath := strings.Replace(filename, ".proto", ".pb.txt", 1)
