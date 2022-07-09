@@ -6,3 +6,5 @@ generate-example2:
 
 build:
 	go build github.com/teach310/genta/cmd/protoc-gen-genta
+
+run: build generate-example2

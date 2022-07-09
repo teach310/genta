@@ -62,17 +62,21 @@ func (plugin *Plugin) run() error {
 }
 
 func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.CodeGeneratorResponse {
-	protofiles := make(map[string]*ProtoFile, len(req.ProtoFile))
+	protoFiles := make(map[string]*ProtoFile, len(req.ProtoFile))
 	for _, fdesc := range req.ProtoFile {
-		protofile := &ProtoFile{Proto: fdesc}
-		protofiles[fdesc.GetName()] = protofile
+		protoFile := &ProtoFile{Proto: fdesc}
+		protoFiles[fdesc.GetName()] = protoFile
 	}
 
 	responseFiles := make([]*pluginpb.CodeGeneratorResponse_File, 0)
 	for _, filename := range req.FileToGenerate {
 		var sb strings.Builder
-		sb.WriteString("Helo,\n")
-		sb.WriteString("World!")
+		protoFile := protoFiles[filename]
+		sb.WriteString("FileDescriptorProto.GetPackage(): ")
+		sb.WriteString(protoFile.Proto.GetPackage())
+		sb.WriteString("\n")
+		sb.WriteString(plugin.getMessageInfoPrototype(protoFile.Proto.GetMessageType()))
+		sb.WriteString("\n\nEND!\n")
 		outputPath := strings.Replace(filename, ".proto", ".pb.txt", 1)
 		content := sb.String()
 		responseFiles = append(responseFiles, &pluginpb.CodeGeneratorResponse_File{
@@ -84,6 +88,30 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 		File: responseFiles,
 	}
 	return resp
+}
+
+// 調査用。DescriptorProtoからの情報を文字列としてぬいて出力する
+func (plugin *Plugin) getMessageInfoPrototype(messageTypes []*descriptorpb.DescriptorProto) string {
+	var sb strings.Builder
+	// message単位でループ
+	for _, message := range messageTypes {
+		sb.WriteString("DescriptorProto.GetName(): ")
+		sb.WriteString(message.GetName())
+		sb.WriteString("\n")
+		// message内のField単位でループ
+		for _, protoField := range message.GetField() {
+			sb.WriteString("FieldDescriptorProto.GetType(): ")
+			sb.WriteString(protoField.GetType().String())
+			sb.WriteString("\n")
+			sb.WriteString("FieldDescriptorProto.GetTypeName(): ")
+			sb.WriteString(protoField.GetTypeName())
+			sb.WriteString("\n")
+			sb.WriteString("FieldDescriptorProto.GetName(): ")
+			sb.WriteString(protoField.GetName())
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
 }
 
 type ProtoFile struct {
