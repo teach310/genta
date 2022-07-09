@@ -90,9 +90,23 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 // 調査用。DescriptorProtoからの情報を文字列としてぬいて出力する
 func (plugin *Plugin) getMessageInfoPrototype(messageTypes []*descriptorpb.DescriptorProto) string {
 	var sb strings.Builder
-	for _, messageType := range messageTypes {
+	// message単位でループ
+	for _, message := range messageTypes {
 		sb.WriteString("DescriptorProto.GetName(): ")
-		sb.WriteString(messageType.GetName())
+		sb.WriteString(message.GetName())
+		sb.WriteString("\n")
+		// message内のField単位でループ
+		for _, protoField := range message.GetField() {
+			sb.WriteString("FieldDescriptorProto.GetType(): ")
+			sb.WriteString(protoField.GetType().String())
+			sb.WriteString("\n")
+			sb.WriteString("FieldDescriptorProto.GetTypeName(): ")
+			sb.WriteString(protoField.GetTypeName())
+			sb.WriteString("\n")
+			sb.WriteString("FieldDescriptorProto.GetName(): ")
+			sb.WriteString(protoField.GetName())
+			sb.WriteString("\n")
+		}
 	}
 	return sb.String()
 }
