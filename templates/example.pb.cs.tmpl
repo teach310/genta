@@ -1,0 +1,15 @@
+using System.Collections;
+using System;
+
+namespace {{.Namespace}}
+{
+    {{- range .ClassList}}
+    [Serializable]
+    public class {{.Name}}
+    {
+        {{- range .Fields}}
+        public {{.TypeName}} {{.Name}};
+        {{- end}}
+    }
+    {{- end}}
+}

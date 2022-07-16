@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/teach310/genta/generator"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -70,15 +71,16 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 
 	responseFiles := make([]*pluginpb.CodeGeneratorResponse_File, 0)
 	for _, filename := range req.FileToGenerate {
-		var sb strings.Builder
+		contentBuilder := generator.Generator{}
 		protoFile := protoFiles[filename]
-		sb.WriteString("FileDescriptorProto.GetPackage(): ")
-		sb.WriteString(protoFile.Proto.GetPackage())
-		sb.WriteString("\n")
-		sb.WriteString(plugin.getMessageInfoPrototype(protoFile.Proto.GetMessageType()))
-		sb.WriteString("\n\nEND!\n")
-		outputPath := strings.Replace(filename, ".proto", ".pb.txt", 1)
-		content := sb.String()
+		content, err := contentBuilder.Run(protoFile.BuildCSharpFile())
+		if err != nil {
+			return &pluginpb.CodeGeneratorResponse{
+				Error: proto.String(err.Error()),
+			}
+		}
+
+		outputPath := strings.Replace(filename, ".proto", ".pb.cs", 1)
 		responseFiles = append(responseFiles, &pluginpb.CodeGeneratorResponse_File{
 			Name:    proto.String(outputPath),
 			Content: proto.String(content),
@@ -117,4 +119,28 @@ func (plugin *Plugin) getMessageInfoPrototype(messageTypes []*descriptorpb.Descr
 type ProtoFile struct {
 	Proto *descriptorpb.FileDescriptorProto
 	// ToGenerate bool // true if we should generate code for this file TODO: 追記
+}
+
+func (protoFile *ProtoFile) BuildCSharpFile() *generator.CSharpFile {
+	namespace := protoFile.Proto.GetPackage()
+	var classList []*generator.CSharpClass
+	for _, message := range protoFile.Proto.GetMessageType() {
+		var fields []*generator.CSharpClassField
+		for _, protoField := range message.GetField() {
+			csharpField := &generator.CSharpClassField{
+				Name:     protoField.GetName(),
+				TypeName: protoField.GetType().String(),
+			}
+			fields = append(fields, csharpField)
+		}
+		class := &generator.CSharpClass{
+			Name:   message.GetName(),
+			Fields: fields,
+		}
+		classList = append(classList, class)
+	}
+	return &generator.CSharpFile{
+		Namespace: namespace,
+		ClassList: classList,
+	}
 }
