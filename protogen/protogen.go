@@ -73,7 +73,14 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 	for _, filename := range req.FileToGenerate {
 		contentBuilder := generator.Generator{}
 		protoFile := protoFiles[filename]
-		content, err := contentBuilder.Run(protoFile.BuildCSharpFile())
+		csharpFile, err := protoFile.BuildCSharpFile()
+		if err != nil {
+			return &pluginpb.CodeGeneratorResponse{
+				Error: proto.String(err.Error()),
+			}
+		}
+
+		content, err := contentBuilder.Run(csharpFile)
 		if err != nil {
 			return &pluginpb.CodeGeneratorResponse{
 				Error: proto.String(err.Error()),
@@ -119,28 +126,4 @@ func (plugin *Plugin) getMessageInfoPrototype(messageTypes []*descriptorpb.Descr
 type ProtoFile struct {
 	Proto *descriptorpb.FileDescriptorProto
 	// ToGenerate bool // true if we should generate code for this file TODO: 追記
-}
-
-func (protoFile *ProtoFile) BuildCSharpFile() *generator.CSharpFile {
-	namespace := protoFile.Proto.GetPackage()
-	var classList []*generator.CSharpClass
-	for _, message := range protoFile.Proto.GetMessageType() {
-		var fields []*generator.CSharpClassField
-		for _, protoField := range message.GetField() {
-			csharpField := &generator.CSharpClassField{
-				Name:     protoField.GetName(),
-				TypeName: protoField.GetType().String(),
-			}
-			fields = append(fields, csharpField)
-		}
-		class := &generator.CSharpClass{
-			Name:   message.GetName(),
-			Fields: fields,
-		}
-		classList = append(classList, class)
-	}
-	return &generator.CSharpFile{
-		Namespace: namespace,
-		ClassList: classList,
-	}
 }
