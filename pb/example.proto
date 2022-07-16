@@ -5,3 +5,8 @@ message SimpleMessage {
     uint64 id = 1;
     string name = 2;
 }
+
+message SecondMessage {
+    int64 id = 1;
+    string name = 2;
+}
