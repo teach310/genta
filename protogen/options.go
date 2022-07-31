@@ -3,7 +3,8 @@ package protogen
 import "strings"
 
 type Options struct {
-	TemplatesPath string
+	TemplatesPath string // .tmplファイルのあるフォルダのパス
+	Model         string // .protoをなんのモデルに変換するのかを指定。 cs, txt
 }
 
 // paramter CodeGeneratorRequest.GetParameterで取得できるカンマ区切りのパラメータ
@@ -21,6 +22,8 @@ func parseOptions(parameter string) *Options {
 		switch key {
 		case "templates_path":
 			options.TemplatesPath = value
+		case "model":
+			options.Model = value
 		}
 	}
 	return options
