@@ -3,7 +3,7 @@ generate-example:
 
 generate-example2:
 	@mkdir -p out
-	protoc --proto_path=pb --plugin=./protoc-gen-genta --genta_out=out pb/*.proto
+	protoc --proto_path=pb --plugin=./protoc-gen-genta --genta_opt=templates_path=templates --genta_out=out pb/*.proto
 
 build:
 	go build github.com/teach310/genta/cmd/protoc-gen-genta

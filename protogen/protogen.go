@@ -63,6 +63,8 @@ func (plugin *Plugin) run() error {
 }
 
 func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.CodeGeneratorResponse {
+	options := parseOptions(req.GetParameter())
+
 	protoFiles := make(map[string]*ProtoFile, len(req.ProtoFile))
 	for _, fdesc := range req.ProtoFile {
 		protoFile := &ProtoFile{Proto: fdesc}
@@ -71,8 +73,8 @@ func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.Cod
 
 	responseFiles := make([]*pluginpb.CodeGeneratorResponse_File, 0)
 	for _, filename := range req.FileToGenerate {
-		contentBuilder := generator.Generator{}
 		protoFile := protoFiles[filename]
+		contentBuilder := generator.Generator{TemplatesPath: options.TemplatesPath}
 		csharpFile, err := protoFile.BuildCSharpFile()
 		if err != nil {
 			return &pluginpb.CodeGeneratorResponse{
