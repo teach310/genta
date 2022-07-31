@@ -63,40 +63,66 @@ func (plugin *Plugin) run() error {
 }
 
 func (plugin *Plugin) generate(req *pluginpb.CodeGeneratorRequest) *pluginpb.CodeGeneratorResponse {
+	options := parseOptions(req.GetParameter())
+
 	protoFiles := make(map[string]*ProtoFile, len(req.ProtoFile))
 	for _, fdesc := range req.ProtoFile {
-		protoFile := &ProtoFile{Proto: fdesc}
-		protoFiles[fdesc.GetName()] = protoFile
+		filePath := fdesc.GetName()
+		protoFile := &ProtoFile{FilePath: filePath, Proto: fdesc}
+		protoFiles[filePath] = protoFile
 	}
 
 	responseFiles := make([]*pluginpb.CodeGeneratorResponse_File, 0)
 	for _, filename := range req.FileToGenerate {
-		contentBuilder := generator.Generator{}
 		protoFile := protoFiles[filename]
-		csharpFile, err := protoFile.BuildCSharpFile()
+		var createResponseFileFunc func(protoFile *ProtoFile, options *Options) (*pluginpb.CodeGeneratorResponse_File, error)
+		if options.Model == "txt" {
+			createResponseFileFunc = plugin.createTextResponseFile
+		} else {
+			createResponseFileFunc = plugin.createCSharpResponseFile
+		}
+		responseFile, err := createResponseFileFunc(protoFile, options)
 		if err != nil {
 			return &pluginpb.CodeGeneratorResponse{
 				Error: proto.String(err.Error()),
 			}
 		}
 
-		content, err := contentBuilder.Run(csharpFile)
-		if err != nil {
-			return &pluginpb.CodeGeneratorResponse{
-				Error: proto.String(err.Error()),
-			}
-		}
-
-		outputPath := strings.Replace(filename, ".proto", ".pb.cs", 1)
-		responseFiles = append(responseFiles, &pluginpb.CodeGeneratorResponse_File{
-			Name:    proto.String(outputPath),
-			Content: proto.String(content),
-		})
+		responseFiles = append(responseFiles, responseFile)
 	}
 	resp := &pluginpb.CodeGeneratorResponse{
 		File: responseFiles,
 	}
 	return resp
+}
+
+func (plugin *Plugin) createCSharpResponseFile(protoFile *ProtoFile, options *Options) (*pluginpb.CodeGeneratorResponse_File, error) {
+	contentBuilder := generator.Generator{TemplatesPath: options.TemplatesPath}
+	csharpFile, err := protoFile.BuildCSharpFile()
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := contentBuilder.Run(csharpFile)
+	if err != nil {
+		return nil, err
+	}
+
+	outputPath := strings.Replace(protoFile.FilePath, ".proto", ".pb.cs", 1)
+	return &pluginpb.CodeGeneratorResponse_File{
+		Name:    proto.String(outputPath),
+		Content: proto.String(content),
+	}, nil
+}
+
+func (plugin *Plugin) createTextResponseFile(protoFile *ProtoFile, options *Options) (*pluginpb.CodeGeneratorResponse_File, error) {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintln("FileDescriptorProto.GetName():", protoFile.FilePath))
+	outputPath := strings.Replace(protoFile.FilePath, ".proto", ".pb.txt", 1)
+	return &pluginpb.CodeGeneratorResponse_File{
+		Name:    proto.String(outputPath),
+		Content: proto.String(sb.String()),
+	}, nil
 }
 
 // 調査用。DescriptorProtoからの情報を文字列としてぬいて出力する
@@ -124,6 +150,7 @@ func (plugin *Plugin) getMessageInfoPrototype(messageTypes []*descriptorpb.Descr
 }
 
 type ProtoFile struct {
-	Proto *descriptorpb.FileDescriptorProto
+	FilePath string // relative
+	Proto    *descriptorpb.FileDescriptorProto
 	// ToGenerate bool // true if we should generate code for this file TODO: 追記
 }

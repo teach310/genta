@@ -2,14 +2,16 @@ package generator
 
 import (
 	"bytes"
+	"path/filepath"
 	"text/template"
 )
 
 type Generator struct {
+	TemplatesPath string
 }
 
 func (g *Generator) Run(csharpFile *CSharpFile) (string, error) {
-	filepath := "templates/example.pb.cs.tmpl"
+	filepath := filepath.Join(g.TemplatesPath, "example.pb.cs.tmpl")
 	tmpl, err := template.ParseFiles(filepath)
 	if err != nil {
 		return "", err
